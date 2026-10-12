@@ -1,11 +1,14 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
+
 
 
 
 from .forms import ContactForm
+
+from .models import Contact
 
 # Create your views here.
 
@@ -42,7 +45,7 @@ def search_contacts(request):
 @login_required
 @require_http_methods("POST")
 def create_contact(request):
-    form = ContactForm(request.POST)
+    form = ContactForm(request.POST,initial={'user':request.user})
 
     if form.is_valid():
         contact = form.save(commit=False)
@@ -54,5 +57,49 @@ def create_contact(request):
         response['HX-Trigger'] = 'success'
 
         return response
+    
+    
+    else:
+        response = render(
+            request,
+            "partials/add-contact.html",
+            {"form": form}
+        )
+
+        response["HX-Retarget"] = "#contact_modal"
+        response["HX-Reswap"] = "outerHTML"
+        response["HX-Trigger-After-Settle"] = "fail"
+
+        return response
+
+
+
+
+
+@login_required
+@require_POST
+def delete_contact(request, contact_id):
+    contact = get_object_or_404(
+        request.user.contacts,
+        id=contact_id
+    )
+
+    contact.delete()
+
+    
+    query = request.POST.get("search", "")
+
+    contacts = request.user.contacts.filter(
+        Q(name__icontains=query) |
+        Q(email__icontains=query)
+    ).order_by("-created_at")
+
+
+    return render(
+        request,
+        "partials/contacts-list.html",
+        {"contacts": contacts}
+    )
+
 
 

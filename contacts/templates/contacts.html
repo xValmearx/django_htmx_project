@@ -59,4 +59,22 @@
 </div>
 
 
+
+
+<script>
+  document.body.addEventListener("fail", () => {
+    const modal = document.getElementById("contact_modal");
+
+    console.log("Modal element:", modal);
+
+    if (modal) {
+      modal.showModal();
+    } else {
+      console.error("Contact modal was not found after the HTMX swap.");
+    }
+  });
+</script>
+
+
+
 {% endblock %}
